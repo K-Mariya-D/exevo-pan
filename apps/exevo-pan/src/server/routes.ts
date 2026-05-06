@@ -18,6 +18,11 @@ import { testMyNotification } from './testMyNotification'
 import * as dashboard from './dashboard'
 import * as auctions from './auctions'
 import * as referrals from './referrals'
+import * as progress from './progress'
+import * as analytics from './analytics'
+import * as events from './events'
+import * as jobs from './jobs'
+import * as integrations from './integrations'
 
 export const routes = {
   registerNotificationDevice,
@@ -41,4 +46,9 @@ export const routes = {
   ...auctions,
   ...referrals,
   ...manageReferrals,
+  ...progress,
+  ...analytics,
+  ...events,
+  ...jobs,
+  ...integrations,
 }

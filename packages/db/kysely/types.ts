@@ -35,9 +35,23 @@ export const GUILD_MEMBER_ROLE = {
   ADMIN: 'ADMIN',
   MODERATOR: 'MODERATOR',
   USER: 'USER',
+  LEADER: 'LEADER',
+  OFFICER: 'OFFICER',
+  MEMBER: 'MEMBER',
 } as const
 export type GUILD_MEMBER_ROLE =
   typeof GUILD_MEMBER_ROLE[keyof typeof GUILD_MEMBER_ROLE]
+export const EVENT_TYPE = {
+  HUNT: 'HUNT',
+  RAID: 'RAID',
+} as const
+export type EVENT_TYPE = typeof EVENT_TYPE[keyof typeof EVENT_TYPE]
+export const EVENT_STATUS = {
+  UPCOMING: 'UPCOMING',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const
+export type EVENT_STATUS = typeof EVENT_STATUS[keyof typeof EVENT_STATUS]
 export const LOG_ENTRY_TYPE = {
   LEAVE_MEMBER: 'LEAVE_MEMBER',
   KICK_MEMBER: 'KICK_MEMBER',
@@ -93,6 +107,51 @@ export type CachedBossCheckStatistics = {
   version: number
   cachedResponse: string
   lastUpdated: Timestamp
+}
+export type Character = {
+  id: string
+  userId: string
+  externalId: string
+  name: string
+  vocation: string | null
+  createdAt: Generated<Timestamp>
+  updatedAt: Timestamp
+}
+export type CharacterSnapshot = {
+  id: string
+  characterId: string
+  level: number
+  skills: unknown | null
+  achievementsCount: number
+  createdAt: Generated<Timestamp>
+}
+export type Event = {
+  id: string
+  guildId: string
+  type: EVENT_TYPE
+  title: string
+  description: string | null
+  location: string | null
+  status: Generated<EVENT_STATUS>
+  scheduledAt: Timestamp
+  createdBy: string
+  createdAt: Generated<Timestamp>
+}
+export type EventParticipant = {
+  id: string
+  eventId: string
+  userId: string
+  characterId: string | null
+  attended: Generated<boolean>
+}
+export type EventResult = {
+  id: string
+  eventId: string
+  totalLoot: number
+  expenses: Generated<number>
+  profit: number
+  distribution: unknown | null
+  createdAt: Generated<Timestamp>
 }
 export type FrozenBossCheckLog = {
   id: string
@@ -234,6 +293,11 @@ export type DB = {
   BossCheck: BossCheck
   BossCheckLog: BossCheckLog
   CachedBossCheckStatistics: CachedBossCheckStatistics
+  Character: Character
+  CharacterSnapshot: CharacterSnapshot
+  Event: Event
+  EventParticipant: EventParticipant
+  EventResult: EventResult
   FrozenBossCheckLog: FrozenBossCheckLog
   Guild: Guild
   GuildApplication: GuildApplication

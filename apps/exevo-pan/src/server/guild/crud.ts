@@ -31,7 +31,7 @@ import {
   utils as blacklistUtils,
 } from '../../modules/BossHunting/blacklist'
 import { HuntingGroupStatistics } from '../../modules/BossHunting/modules/HuntingGroups/contexts/types'
-import { can } from './permissions'
+import { can, isLeaderRole, isOfficerRole } from './permissions'
 
 type UniqueMemberArgs = (
   | { id: string; guildId?: never; userId?: never }
@@ -162,7 +162,7 @@ export const createGuild = authedProcedure
             create: {
               userId: id,
               name,
-              role: 'ADMIN',
+              role: 'LEADER',
             },
           },
         },
@@ -227,7 +227,9 @@ export const updateGuild = authedProcedure
       })
     }
 
-    const isUpdatingGuildPrivacy = guildData.private !== guild.private
+    const targetPrivate =
+      typeof guildData.private === 'boolean' ? guildData.private : guild.private
+    const isUpdatingGuildPrivacy = targetPrivate !== guild.private
     if (
       isUpdatingGuildPrivacy &&
       guildData.private &&
@@ -244,6 +246,7 @@ export const updateGuild = authedProcedure
       where: { id: guildId },
       data: {
         ...guildData,
+        private: targetPrivate,
         name: name?.trim(),
         description: description?.trim(),
         messageBoard: messageBoard?.trim(),
@@ -252,6 +255,145 @@ export const updateGuild = authedProcedure
     })
 
     return result
+  })
+
+export const deleteGuild = authedProcedure
+  .input(
+    z.object({
+      guildId: z.string(),
+    }),
+  )
+  .mutation(async ({ ctx: { token }, input: { guildId } }) => {
+    const EXEVO_PAN_ADMIN = token.role === 'ADMIN'
+    const requesterMember = await findGuildMember({
+      guildId,
+      userId: token.id,
+      EXEVO_PAN_ADMIN,
+    }).catch(() => null)
+
+    if (!requesterMember && !EXEVO_PAN_ADMIN) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Insufficient privileges to delete this guild',
+      })
+    }
+
+    if (
+      !EXEVO_PAN_ADMIN &&
+      requesterMember &&
+      !isLeaderRole(requesterMember.role)
+    ) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Only guild leader can delete guild',
+      })
+    }
+
+    return prisma.guild.delete({ where: { id: guildId } })
+  })
+
+export const joinGuild = authedProcedure
+  .input(
+    z.object({
+      guildId: z.string(),
+      name: z
+        .string()
+        .min(guildValidationRules.name.MIN)
+        .max(guildValidationRules.name.MAX),
+    }),
+  )
+  .mutation(async ({ ctx: { token }, input: { guildId, name } }) => {
+    const guild = await prisma.guild.findUnique({ where: { id: guildId } })
+    if (!guild) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Guild not found' })
+    }
+
+    const isOpenGuild = guild.private === false
+    if (!isOpenGuild) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Cannot join closed guild directly',
+      })
+    }
+
+    const [alreadyInThisGuild, alreadyInAnyGuild] = await Promise.all([
+      prisma.guildMember.findFirst({ where: { guildId, userId: token.id } }),
+      prisma.guildMember.findFirst({ where: { userId: token.id } }),
+    ])
+
+    if (alreadyInThisGuild) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'You are already a member of this guild',
+      })
+    }
+
+    if (alreadyInAnyGuild) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'User is already in another guild',
+      })
+    }
+
+    return prisma.guildMember.create({
+      data: {
+        guildId,
+        userId: token.id,
+        name: name.trim(),
+        role: 'MEMBER',
+      },
+    })
+  })
+
+export const addGuildMember = authedProcedure
+  .input(
+    z.object({
+      guildId: z.string(),
+      userId: z.string(),
+      name: z
+        .string()
+        .min(guildValidationRules.name.MIN)
+        .max(guildValidationRules.name.MAX),
+    }),
+  )
+  .mutation(async ({ ctx: { token }, input: { guildId, userId, name } }) => {
+    const requesterMember = await findGuildMember({ guildId, userId: token.id })
+    if (
+      !isLeaderRole(requesterMember.role) &&
+      !isOfficerRole(requesterMember.role)
+    ) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Only leader or officer can add members',
+      })
+    }
+
+    const [alreadyInThisGuild, alreadyInAnyGuild] = await Promise.all([
+      prisma.guildMember.findFirst({ where: { guildId, userId } }),
+      prisma.guildMember.findFirst({ where: { userId } }),
+    ])
+
+    if (alreadyInThisGuild) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'User is already in this guild',
+      })
+    }
+    if (alreadyInAnyGuild) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'User is already in another guild',
+      })
+    }
+
+    return prisma.guildMember.create({
+      data: {
+        guildId,
+        userId,
+        name: name.trim(),
+        role: 'MEMBER',
+      },
+    })
   })
 
 export const listGuilds = publicProcedure
@@ -329,6 +471,9 @@ export const manageGuildMemberRole = authedProcedure
         z.literal<GUILD_MEMBER_ROLE>('ADMIN'),
         z.literal<GUILD_MEMBER_ROLE>('MODERATOR'),
         z.literal<GUILD_MEMBER_ROLE>('USER'),
+        z.literal<GUILD_MEMBER_ROLE>('LEADER'),
+        z.literal<GUILD_MEMBER_ROLE>('OFFICER'),
+        z.literal<GUILD_MEMBER_ROLE>('MEMBER'),
       ]),
     }),
   )
@@ -355,7 +500,7 @@ export const manageGuildMemberRole = authedProcedure
 
     let updatedMembers: GuildMember[] = []
 
-    if (role === 'ADMIN' && requesterMember !== null) {
+    if (requesterMember && isLeaderRole(role)) {
       const result = await prisma.$transaction([
         prisma.guildMember.update({
           where: { id: managedMember.id },
@@ -363,10 +508,11 @@ export const manageGuildMemberRole = authedProcedure
         }),
         prisma.guildMember.update({
           where: { id: requesterMember.id },
-          data: { role: 'MODERATOR' },
+          data: {
+            role: isOfficerRole(requesterMember.role) ? 'OFFICER' : 'MEMBER',
+          },
         }),
       ])
-
       updatedMembers = [...updatedMembers, ...result]
     } else {
       const result = await prisma.guildMember.update({
@@ -419,12 +565,12 @@ export const excludeGuildMember = authedProcedure
         return excludedMember
       }
 
-      if (excludedMember.role === 'ADMIN') {
+      if (isLeaderRole(excludedMember.role)) {
         await prisma.$transaction([
           prisma.guildMember.delete({ where: { id: excludedMember.id } }),
           prisma.guildMember.update({
             where: { id: newElectedAdmin.id },
-            data: { role: 'ADMIN' },
+            data: { role: 'LEADER' },
           }),
           prisma.guildLogEntry.create({
             data: {
@@ -641,7 +787,7 @@ export const manageGuildApplication = authedProcedure
           prisma.guildMember.create({
             data: {
               name: applyAs,
-              role: 'USER',
+              role: 'MEMBER',
               guildId,
               userId,
               targetedLogEntry: {

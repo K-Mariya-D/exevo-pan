@@ -72,6 +72,9 @@ model User {
   guildApplications    GuildApplication[]
   referralTag          ReferralTag?
   referralHistoryEntry ReferralHistoryEntry[]
+  organizedEvents      Event[]               @relation("EventOrganizer")
+  eventParticipations  EventParticipant[]
+  characters           Character[]
 }
 
 model NotificationDevice {
@@ -241,12 +244,16 @@ model Guild {
   bossChecks         BossCheck[]
   bossCheckLog       BossCheckLog[]
   frozenBossCheckLog FrozenBossCheckLog[]
+  events             Event[]
 }
 
 enum GUILD_MEMBER_ROLE {
   ADMIN
   MODERATOR
   USER
+  LEADER
+  OFFICER
+  MEMBER
 }
 
 model GuildMember {
@@ -270,6 +277,100 @@ model GuildMember {
   @@unique([guildId, userId])
   @@index([guildId])
   @@index([userId])
+}
+
+enum EVENT_TYPE {
+  HUNT
+  RAID
+}
+
+enum EVENT_STATUS {
+  UPCOMING
+  COMPLETED
+  CANCELLED
+}
+
+model Event {
+  id          String       @id @default(uuid())
+  guildId     String
+  type        EVENT_TYPE
+  title       String
+  description String?      @db.Text
+  location    String?
+  status      EVENT_STATUS @default(UPCOMING)
+  scheduledAt DateTime
+  createdBy   String
+  createdAt   DateTime     @default(now())
+
+  guild        Guild               @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  organizer    User                @relation("EventOrganizer", fields: [createdBy], references: [id], onDelete: Cascade)
+  participants EventParticipant[]
+  result       EventResult?
+
+  @@index([guildId])
+  @@index([createdBy])
+  @@index([scheduledAt])
+}
+
+model EventParticipant {
+  id          String  @id @default(uuid())
+  eventId     String
+  userId      String
+  characterId String?
+  attended    Boolean @default(false)
+
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([characterId])
+}
+
+model EventResult {
+  id           String @id @default(uuid())
+  eventId      String @unique
+  totalLoot    Int
+  expenses     Int    @default(0)
+  profit       Int
+  distribution Json?
+  createdAt    DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Character {
+  id          String   @id @default(uuid())
+  userId      String
+  externalId  String
+  name        String
+  vocation    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshots    CharacterSnapshot[]
+  participants EventParticipant[]
+
+  @@unique([externalId])
+  @@index([userId])
+  @@index([externalId])
+}
+
+model CharacterSnapshot {
+  id                String   @id @default(uuid())
+  characterId       String
+  level             Int
+  skills            Json?
+  achievementsCount Int
+  createdAt         DateTime @default(now())
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
+  @@index([createdAt])
 }
 
 model GuildApplication {

@@ -67,6 +67,14 @@ import exevoproEN from './en/exevopro'
 import exevoproES from './es/exevopro'
 import exevoproPT from './pt/exevopro'
 import exevoproPL from './pl/exevopro'
+import guildsEN from './en/guilds'
+import guildsES from './es/guilds'
+import guildsPT from './pt/guilds'
+import guildsPL from './pl/guilds'
+import integrationsEN from './en/integrations'
+import integrationsES from './es/integrations'
+import integrationsPT from './pt/integrations'
+import integrationsPL from './pl/integrations'
 
 export const error = {
   en: errorEN,
@@ -151,4 +159,16 @@ export const exevopro = {
   es: exevoproES,
   pt: exevoproPT,
   pl: exevoproPL,
+}
+export const guilds = {
+  en: guildsEN,
+  es: guildsES,
+  pt: guildsPT,
+  pl: guildsPL,
+}
+export const integrations = {
+  en: integrationsEN,
+  es: integrationsES,
+  pt: integrationsPT,
+  pl: integrationsPL,
 }
