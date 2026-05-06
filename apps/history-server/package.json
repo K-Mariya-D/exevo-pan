@@ -9,7 +9,7 @@
     "format": "prettier --write 'src/**/*.{js,ts}'",
     "typecheck": "tsc --noEmit --incremental false",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
-    "dev": "PORT=4000 NODE_OPTIONS=--max_old_space_size=10000 sucrase-node src",
+    "dev": "node scripts/dev.js",
     "build": "rm -rf dist && sucrase ./src -d ./dist --transforms typescript,imports && cp ./src/Data/*.json ./dist/Data && cp ./src/Data/*.jsonl ./dist/Data",
     "start": "PORT=4000 node --max_old_space_size=10000 ./dist",
     "staging": "yarn build && STAGING=true PORT=4546 node ./dist"
@@ -30,6 +30,7 @@
     "@types/localtunnel": "^2.0.1",
     "@types/node-fetch": "^2.5.12",
     "config": "*",
+    "cross-env": "^10.1.0",
     "sucrase": "^3.20.3",
     "typescript": "^4.3.2"
   }
