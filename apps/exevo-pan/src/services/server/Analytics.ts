@@ -1,11 +1,14 @@
 import { prisma } from 'lib/prisma'
 
+// Временные окна для расчёта статистики: 30 и 7 дней
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
 const windowStart = (ms: number): Date => new Date(Date.now() - ms)
+// Время хранения кэша
 const CACHE_TTL_MS = 30 * 1000
 
+// Средний уровень играков на сервере - для сравнения
 const SERVER_BASELINES: Record<
   string,
   { averageLevel: number; averageSkill: number }
@@ -44,7 +47,7 @@ const setCached = <T>(key: string, value: T): T => {
   analyticsCache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value })
   return value
 }
-
+// Берет всех участников гильдии
 const getGuildMemberUserIds = async (guildId: string): Promise<string[]> => {
   const members = await prisma.guildMember.findMany({
     where: { guildId },
@@ -53,8 +56,9 @@ const getGuildMemberUserIds = async (guildId: string): Promise<string[]> => {
 
   return members.map((member) => member.userId)
 }
-
+// Логика аналитики
 export default class AnalyticsClient {
+  // Берёт последний снимок каждого персонажа
   static async getLatestCharacterSnapshots(guildId: string) {
     const cached = getCached<
       Array<{
@@ -97,6 +101,7 @@ export default class AnalyticsClient {
     )
   }
 
+  // Считает средний уровень, скиллы и сколько персонажей учтено в подсчёте
   static async getGuildStats(guildId: string) {
     const cached = getCached<{
       averageLevel: number
@@ -139,6 +144,7 @@ export default class AnalyticsClient {
     })
   }
 
+  // считает кто в гильдии сколько "прогрессировал"
   static async getGuildActivity(guildId: string) {
     const cached = getCached<
       Array<{
@@ -232,6 +238,7 @@ export default class AnalyticsClient {
     )
   }
 
+  // Считает какие классы есть в гильдии
   static async getVocationDistribution(guildId: string) {
     const cached = getCached<
       Array<{ vocation: string; count: number; percentage: number }>
@@ -266,6 +273,7 @@ export default class AnalyticsClient {
     )
   }
 
+  // Сравнивает гильдию с сервером
   static async getServerComparison(guildId: string) {
     const guild = await prisma.guild.findUnique({
       where: { id: guildId },
@@ -308,6 +316,7 @@ export default class AnalyticsClient {
     }
   }
 
+  // Еженедельный отчёт
   static async getWeeklyReport(guildId: string) {
     const [stats, activity] = await Promise.all([
       this.getGuildStats(guildId),

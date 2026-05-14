@@ -11,7 +11,7 @@ import { apiSuccess, toTRPCError } from './api'
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 const windowStart = (): Date => new Date(Date.now() - THIRTY_DAYS_MS)
-
+// Даёт доступ к персонажам
 const getScopedCharacterIds = async (userId: string, isAdmin: boolean) => {
   const where = isAdmin ? {} : { userId }
   const characters = await prisma.character.findMany({
@@ -20,7 +20,7 @@ const getScopedCharacterIds = async (userId: string, isAdmin: boolean) => {
   })
   return characters.map((character) => character.id)
 }
-
+// Синхронизирует персонажаей из внешнего источника
 export const runCharacterSyncJob = authedProcedure
   .input(
     z.object({
@@ -79,7 +79,7 @@ export const runCharacterSyncJob = authedProcedure
       failures,
     })
   })
-
+// Генерирует недельный отчёт гильдии
 export const runWeeklyReportJob = authedProcedure
   .input(
     z.object({
@@ -117,7 +117,7 @@ export const runWeeklyReportJob = authedProcedure
       throw toTRPCError(error, 'Failed to generate weekly report')
     }
   })
-
+// Удаляет старые снимки персонажей
 export const runCleanupSnapshotsJob = authedProcedure
   .input(
     z.object({

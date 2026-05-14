@@ -5,7 +5,7 @@ import { prisma } from 'lib/prisma'
 import { IntegrationsClient, LootCalculatorClient } from 'services/server'
 import { isLeaderRole, isOfficerRole } from './guild/permissions'
 import { apiSuccess } from './api'
-
+// Валидация создания ивента - вспомогательная функция
 const eventInput = z.object({
   guildId: z.string(),
   type: z.union([z.literal('HUNT'), z.literal('RAID')]),
@@ -14,7 +14,7 @@ const eventInput = z.object({
   location: z.string().max(120).optional(),
   scheduledAt: z.date(),
 })
-
+// Состоит ли пользователь в гильдии: возвращает участника
 const requireGuildMember = async (guildId: string, userId: string) => {
   const member = await prisma.guildMember.findFirst({
     where: { guildId, userId },
@@ -28,7 +28,7 @@ const requireGuildMember = async (guildId: string, userId: string) => {
   }
   return member
 }
-
+// Создание события
 export const createEvent = authedProcedure
   .input(eventInput)
   .mutation(async ({ ctx: { token }, input }) => {
@@ -52,7 +52,7 @@ export const createEvent = authedProcedure
         createdBy: token.id,
       },
     })
-
+    // Уведомление о событии участникам
     await IntegrationsClient.notifyGuildMembers({
       guildId: createdEvent.guildId,
       title: 'New event created',
@@ -61,7 +61,7 @@ export const createEvent = authedProcedure
 
     return apiSuccess(createdEvent)
   })
-
+// Getter события
 export const getEvent = authedProcedure
   .input(z.object({ eventId: z.string() }))
   .query(async ({ ctx: { token }, input: { eventId } }) => {
@@ -77,7 +77,7 @@ export const getEvent = authedProcedure
     await requireGuildMember(event.guildId, token.id)
     return apiSuccess(event)
   })
-
+// Возвращает все ивенты гильдии
 export const listGuildEvents = authedProcedure
   .input(z.object({ guildId: z.string() }))
   .query(async ({ ctx: { token }, input: { guildId } }) => {
@@ -111,7 +111,7 @@ export const listGuildEvents = authedProcedure
       }),
     )
   })
-
+// Обновление ивента
 export const updateEvent = authedProcedure
   .input(
     z.object({
@@ -157,7 +157,7 @@ export const updateEvent = authedProcedure
       }),
     )
   })
-
+// Удаление события
 export const deleteEvent = authedProcedure
   .input(z.object({ eventId: z.string() }))
   .mutation(async ({ ctx: { token }, input: { eventId } }) => {
@@ -173,7 +173,7 @@ export const deleteEvent = authedProcedure
     }
     return apiSuccess(await prisma.event.delete({ where: { id: eventId } }))
   })
-
+// Присоединиться к событию - записать участника
 export const joinEvent = authedProcedure
   .input(z.object({ eventId: z.string(), characterId: z.string().optional() }))
   .mutation(async ({ ctx: { token }, input: { eventId, characterId } }) => {
@@ -194,7 +194,7 @@ export const joinEvent = authedProcedure
       }),
     )
   })
-
+// Покинуть событие
 export const leaveEvent = authedProcedure
   .input(z.object({ eventId: z.string() }))
   .mutation(async ({ ctx: { token }, input: { eventId } }) => {
@@ -214,7 +214,7 @@ export const leaveEvent = authedProcedure
       await prisma.eventParticipant.delete({ where: { id: existing.id } }),
     )
   })
-
+// Отмечает, кто действительно пришёл на ивент
 export const markEventAttendance = authedProcedure
   .input(
     z.object({
@@ -257,7 +257,7 @@ export const markEventAttendance = authedProcedure
       )
     },
   )
-
+// Распределение лута между участниками
 export const setEventLoot = authedProcedure
   .input(
     z.object({
@@ -287,7 +287,7 @@ export const setEventLoot = authedProcedure
           message: 'Loot distribution only after event completion',
         })
       }
-
+      // Для этого используется калькулятор лута
       const distribution = LootCalculatorClient.calculateDistribution({
         totalLoot,
         expenses,
@@ -317,7 +317,7 @@ export const setEventLoot = authedProcedure
       )
     },
   )
-
+// Раздача лута - отдаёт готовый снимок
 export const distributeEventLoot = authedProcedure
   .input(z.object({ eventId: z.string() }))
   .mutation(async ({ ctx: { token }, input: { eventId } }) => {

@@ -10,6 +10,7 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 
 const windowStart = (): Date => new Date(Date.now() - THIRTY_DAYS_MS)
 
+// Импорт персонажа из внешнего сервиса в БД
 export const importCharacter = authedProcedure
   .input(
     z.object({
@@ -22,7 +23,7 @@ export const importCharacter = authedProcedure
       const imported = await CharBazaarClient.fetchCharacter(name.trim())
       const importedExternalId =
         externalId?.trim() || imported.name.toLowerCase()
-
+      // Если персонажа нет - create, если есть - update
       const character = await prisma.character.upsert({
         where: { externalId: importedExternalId },
         update: {
@@ -52,7 +53,7 @@ export const importCharacter = authedProcedure
       throw toTRPCError(error, 'Failed to import character')
     }
   })
-
+// Обновляет существующего персонажа (создаёт новый snapshot)
 export const syncCharacter = authedProcedure
   .input(z.object({ characterId: z.string() }))
   .mutation(async ({ ctx: { token }, input: { characterId } }) => {
@@ -81,7 +82,7 @@ export const syncCharacter = authedProcedure
           achievementsCount: imported.achievementsCount ?? 0,
         },
       })
-
+      // Удаляются снимки старше 30 дней - оптимизация
       await prisma.characterSnapshot.deleteMany({
         where: {
           characterId: character.id,
@@ -94,7 +95,7 @@ export const syncCharacter = authedProcedure
       throw toTRPCError(error, 'Failed to sync character')
     }
   })
-
+// Возвращает персонажа и последний снимок
 export const getCharacter = authedProcedure
   .input(z.object({ characterId: z.string() }))
   .query(async ({ ctx: { token }, input: { characterId } }) => {
@@ -124,7 +125,7 @@ export const getCharacter = authedProcedure
       latestSnapshot: character.snapshots[0] ?? null,
     })
   })
-
+// Возвращает историю прогресса за 30 дней
 export const getCharacterHistory = authedProcedure
   .input(z.object({ characterId: z.string() }))
   .query(async ({ ctx: { token }, input: { characterId } }) => {
@@ -153,7 +154,7 @@ export const getCharacterHistory = authedProcedure
     })
     return apiSuccess(history)
   })
-
+// Собирает прогресс всей гильдии
 export const getGuildProgress = authedProcedure
   .input(z.object({ guildId: z.string() }))
   .query(async ({ ctx: { token }, input: { guildId } }) => {
@@ -234,7 +235,7 @@ export const getGuildProgress = authedProcedure
       },
     })
   })
-
+// ranking system. Для каждого user'a: highest level, growth за 30 дней, achievements
 export const getGuildLeaderboard = authedProcedure
   .input(z.object({ guildId: z.string() }))
   .query(async ({ ctx: { token }, input: { guildId } }) => {

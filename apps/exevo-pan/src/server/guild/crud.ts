@@ -227,6 +227,7 @@ export const updateGuild = authedProcedure
       })
     }
 
+    // Немного изменены настройки приватности - проверяет меняется ли значение приватности и каким оно будет
     const targetPrivate =
       typeof guildData.private === 'boolean' ? guildData.private : guild.private
     const isUpdatingGuildPrivacy = targetPrivate !== guild.private
@@ -256,7 +257,8 @@ export const updateGuild = authedProcedure
 
     return result
   })
-
+// Добавлено удаление гильдии
+// Только для авторизированных + LEADER - валидирует данные? потом удаляет
 export const deleteGuild = authedProcedure
   .input(
     z.object({
@@ -291,7 +293,7 @@ export const deleteGuild = authedProcedure
 
     return prisma.guild.delete({ where: { id: guildId } })
   })
-
+// Вступление в гильдию (только открытую)
 export const joinGuild = authedProcedure
   .input(
     z.object({
@@ -344,7 +346,7 @@ export const joinGuild = authedProcedure
       },
     })
   })
-
+// Добовление пользователя в группу Лидером или Офицером
 export const addGuildMember = authedProcedure
   .input(
     z.object({
@@ -462,7 +464,7 @@ export const listGuilds = publicProcedure
       }
     },
   )
-
+// Добавлены новые роли
 export const manageGuildMemberRole = authedProcedure
   .input(
     z.object({

@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { authedProcedure } from 'server/trpc'
 import { IntegrationsClient } from 'services/server'
 import { apiSuccess, toTRPCError } from './api'
-
+// Встраивает в систему персонажа из внешнего аукциона
 export const syncCharacterFromAuction = authedProcedure
   .input(z.object({ auctionId: z.number().int().positive() }))
   .mutation(async ({ input: { auctionId } }) => {
@@ -15,7 +15,7 @@ export const syncCharacterFromAuction = authedProcedure
       throw toTRPCError(error, 'Failed to sync character from auction')
     }
   })
-
+// Считает распределение лута без записи в БД - для UI
 export const distributeLootSnapshot = authedProcedure
   .input(
     z.object({
@@ -37,7 +37,7 @@ export const distributeLootSnapshot = authedProcedure
       throw toTRPCError(error, 'Failed to calculate loot distribution')
     }
   })
-
+// Уведомление о создании события
 export const notifyEventCreated = authedProcedure
   .input(
     z.object({
@@ -59,7 +59,7 @@ export const notifyEventCreated = authedProcedure
       throw toTRPCError(error, 'Failed to notify event creation')
     }
   })
-
+// Уведомление о скором начале события
 export const notifyEventStartingSoon = authedProcedure
   .input(
     z.object({
@@ -81,7 +81,7 @@ export const notifyEventStartingSoon = authedProcedure
       throw toTRPCError(error, 'Failed to notify event start')
     }
   })
-
+// Уведомление о приглашении в гильдию
 export const notifyGuildInvitation = authedProcedure
   .input(
     z.object({
@@ -103,7 +103,7 @@ export const notifyGuildInvitation = authedProcedure
       throw toTRPCError(error, 'Failed to notify invitation')
     }
   })
-
+// Уведомлении о недельном отчёте
 export const notifyWeeklyReport = authedProcedure
   .input(
     z.object({

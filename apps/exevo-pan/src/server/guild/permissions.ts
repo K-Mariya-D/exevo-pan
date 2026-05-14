@@ -1,5 +1,5 @@
 import type { GUILD_MEMBER_ROLE } from '@prisma/client'
-
+// Контракт прав для роли, т.е. ответы что какждая роль может делать
 type PermissionSet = {
   exclude: (role: GUILD_MEMBER_ROLE) => boolean
   editGuild: boolean
@@ -59,7 +59,7 @@ export const can: Record<GUILD_MEMBER_ROLE, PermissionSet> = {
     markAsNoChance: true,
   },
 }
-
+// Вспомогательные функции для проверки ролей
 export const isLeaderRole = (role: GUILD_MEMBER_ROLE): boolean =>
   role === 'ADMIN' || role === 'LEADER'
 

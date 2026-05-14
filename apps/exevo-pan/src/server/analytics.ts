@@ -7,13 +7,14 @@ import { assertGuildAccess } from './guild/access'
 
 const guildInput = z.object({ guildId: z.string() })
 
+// Общая статистика гильдии
 export const getGuildStats = authedProcedure
   .input(guildInput)
   .query(async ({ ctx: { token }, input: { guildId } }) => {
     await assertGuildAccess(guildId, token.id, token.role === 'ADMIN')
     return apiSuccess(await AnalyticsClient.getGuildStats(guildId))
   })
-
+// Список активности
 export const getGuildActivity = authedProcedure
   .input(
     guildInput.extend({
@@ -25,21 +26,21 @@ export const getGuildActivity = authedProcedure
     const activity = await AnalyticsClient.getGuildActivity(guildId)
     return apiSuccess(activity.slice(0, top))
   })
-
+// Распределение игровых классов в гильдии
 export const getGuildVocations = authedProcedure
   .input(guildInput)
   .query(async ({ ctx: { token }, input: { guildId } }) => {
     await assertGuildAccess(guildId, token.id, token.role === 'ADMIN')
     return apiSuccess(await AnalyticsClient.getVocationDistribution(guildId))
   })
-
+// Сравнении гильдии с показателями по серверу
 export const getGuildComparison = authedProcedure
   .input(guildInput)
   .query(async ({ ctx: { token }, input: { guildId } }) => {
     await assertGuildAccess(guildId, token.id, token.role === 'ADMIN')
     return apiSuccess(await AnalyticsClient.getServerComparison(guildId))
   })
-
+// Еженедельный отчёт
 export const getGuildReports = authedProcedure
   .input(guildInput)
   .query(async ({ ctx: { token }, input: { guildId } }) => {
